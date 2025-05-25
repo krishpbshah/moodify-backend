@@ -4,8 +4,8 @@ import { getPrediction, getRecommendation } from '../services/api';
 import { Prediction, Recommendation } from '../types';
 
 // Spotify Client ID from your dashboard
-const SPOTIFY_CLIENT_ID = '01cbfb648a2f48568db1901f1631921a';
-const REDIRECT_URI = 'https://moodify-krish.vercel.app/callback';
+const SPOTIFY_CLIENT_ID = process.env.REACT_APP_SPOTIFY_CLIENT_ID || '01cbfb648a2f48568db1901f1631921a';
+const REDIRECT_URI = 'https://moodify-backend-ten.vercel.app/callback';
 
 // Create a wrapper component for the Spotify icon
 const SpotifyIcon: React.FC = () => {
