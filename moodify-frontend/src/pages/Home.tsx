@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaSpotify } from 'react-icons/fa';
 import { getPrediction, getRecommendation } from '../services/api';
 import { Prediction, Recommendation } from '../types';
+import { generateCodeChallenge, generateCodeVerifier } from '../utils/pkce';
 
 // Spotify Client ID from your dashboard
 const SPOTIFY_CLIENT_ID = process.env.REACT_APP_SPOTIFY_CLIENT_ID || '01cbfb648a2f48568db1901f1631921a';
@@ -27,36 +28,38 @@ const Home: React.FC = () => {
     }
   }, []);
 
-  const handleSpotifyLogin = () => {
+  const handleSpotifyLogin = async () => {
     if (!SPOTIFY_CLIENT_ID) {
       setError('Spotify Client ID is missing');
       return;
     }
 
-    console.log('Using Client ID:', SPOTIFY_CLIENT_ID);
-    console.log('Using Redirect URI:', REDIRECT_URI);
+    try {
+      const codeVerifier = generateCodeVerifier();
+      const codeChallenge = await generateCodeChallenge(codeVerifier);
+      const state = Math.random().toString(36).substring(7);
+      
+      localStorage.setItem('code_verifier', codeVerifier);
+      localStorage.setItem('state', state);
 
-    const scope = 'user-read-private user-read-email user-top-read user-library-read';
-    const state = Math.random().toString(36).substring(7);
-    const codeVerifier = Math.random().toString(36).substring(7);
-    
-    localStorage.setItem('code_verifier', codeVerifier);
-    localStorage.setItem('state', state);
+      const scope = 'user-read-private user-read-email user-top-read user-library-read';
+      const authUrl = new URL('https://accounts.spotify.com/authorize');
+      const params = {
+        response_type: 'code',
+        client_id: SPOTIFY_CLIENT_ID,
+        scope,
+        redirect_uri: REDIRECT_URI,
+        state,
+        code_challenge_method: 'S256',
+        code_challenge: codeChallenge,
+      };
 
-    const authUrl = new URL('https://accounts.spotify.com/authorize');
-    const params = {
-      response_type: 'code',
-      client_id: SPOTIFY_CLIENT_ID,
-      scope,
-      redirect_uri: REDIRECT_URI,
-      state,
-      code_challenge_method: 'S256',
-      code_challenge: codeVerifier,
-    };
-
-    console.log('Auth URL params:', params);
-    authUrl.search = new URLSearchParams(params).toString();
-    window.location.href = authUrl.toString();
+      authUrl.search = new URLSearchParams(params).toString();
+      window.location.href = authUrl.toString();
+    } catch (error) {
+      setError('Failed to initialize Spotify login');
+      console.error('Spotify login error:', error);
+    }
   };
 
   const handleSubmit = async () => {
